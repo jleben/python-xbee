@@ -10,7 +10,7 @@ packages=[
 
 setup(
     name='XBee',
-    version='2.1.0',
+    version='2.1.0-leben',
     author='Paul Malmsten',
     author_email='pmalmsten@gmail.com',
     packages=packages,
