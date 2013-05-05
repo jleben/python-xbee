@@ -99,7 +99,7 @@ class XBeeBase(threading.Thread):
     def _wait_for_frame(self):
         """
         _wait_for_frame: None -> binary data
-        
+
         _wait_for_frame will read from the serial port until a valid
         API frame arrives. It will then return the binary data
         contained within the frame.
@@ -108,40 +108,38 @@ class XBeeBase(threading.Thread):
         and self.thread_continue is set to False, the thread will
         exit by raising a ThreadQuitException.
         """
+
         frame = APIFrame(escaped=self._escaped)
-        
+
         while True:
                 if self._callback and not self._thread_continue:
                     raise ThreadQuitException
 
-                if self.serial.inWaiting() == 0:
-                    time.sleep(.01)
-                    continue
-                
-                byte = self.serial.read()
+                bytes = self.serial.read(1)
+                byte = bytes[0]
 
                 if byte != APIFrame.START_BYTE:
                     continue
 
-                # Save all following bytes, if they are not empty
-                if len(byte) == 1:
-                    frame.fill(byte)
-                    
-                while(frame.remaining_bytes() > 0):
-                    byte = self.serial.read()
-                    
-                    if len(byte) == 1:
+                frame.fill(byte)
+
+                while True:
+                    remaining_bytes = frame.remaining_bytes()
+                    if remaining_bytes < 1:
+                        break
+                    bytes = self.serial.read(remaining_bytes)
+                    for byte in bytes:
                         frame.fill(byte)
 
                 try:
                     # Try to parse and return result
                     frame.parse()
-                    
+
                     # Ignore empty frames
                     if len(frame.data) == 0:
                         frame = APIFrame()
                         continue
-                        
+
                     return frame
                 except ValueError:
                     # Bad frame, so restart
